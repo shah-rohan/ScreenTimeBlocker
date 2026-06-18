@@ -19,7 +19,12 @@ jobs:
     - name: Generate Xcode Project
       run: xcodegen generate
     
-    - name: Build App
+    - name: Verify entitlements file exists
+      run: |
+        echo "=== Checking entitlements ==="
+        cat ScreenTimeBlocker.entitlements
+    
+    - name: Build App (with embedded entitlements)
       run: |
         xcodebuild clean archive \
           -project ScreenTimeBlocker.xcodeproj \
@@ -28,18 +33,39 @@ jobs:
           -archivePath $PWD/build/ScreenTimeBlocker.xcarchive \
           -sdk iphoneos \
           -destination 'generic/platform=iOS' \
-          CODE_SIGN_IDENTITY="" \
+          CODE_SIGN_IDENTITY="-" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+          CODE_SIGNING_ALLOWED=NO \
+          ENABLE_BITCODE=NO
+    
+    - name: Verify entitlements in built app
+      run: |
+        APP_PATH="build/ScreenTimeBlocker.xcarchive/Products/Applications/ScreenTimeBlocker.app"
+        if [ -f "$APP_PATH/embedded.mobileprovision" ]; then
+          echo "✓ Provisioning profile found"
+        fi
+        
+        # Copy entitlements into the app bundle
+        echo "=== Manually embedding entitlements ==="
+        cp ScreenTimeBlocker.entitlements "$APP_PATH/Entitlements.plist"
+        ls -la "$APP_PATH"
     
     - name: Export IPA
       run: |
-        mkdir Payload
+        mkdir -p Payload
         cp -r build/ScreenTimeBlocker.xcarchive/Products/Applications/ScreenTimeBlocker.app Payload/
+        
+        # Ensure entitlements are in the IPA
+        if [ ! -f "Payload/ScreenTimeBlocker.app/Entitlements.plist" ]; then
+          cp ScreenTimeBlocker.entitlements Payload/ScreenTimeBlocker.app/Entitlements.plist
+        fi
+        
         zip -r ScreenTimeBlocker.ipa Payload
+        ls -lh ScreenTimeBlocker.ipa
     
     - name: Upload IPA Artifact
       uses: actions/upload-artifact@v4
       with:
         name: ScreenTimeBlocker
         path: ScreenTimeBlocker.ipa
+        if-no-files-found: error

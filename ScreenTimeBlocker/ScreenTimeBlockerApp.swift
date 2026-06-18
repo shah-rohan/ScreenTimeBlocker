@@ -7,29 +7,47 @@ struct ScreenTimeBlockerApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(store)
+            if #available(iOS 16.0, *) {
+                ContentView()
+                    .environmentObject(store)
+            } else {
+                VStack {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 60))
+                        .foregroundColor(.orange)
+                    Text("iOS 16.0 or later required")
+                        .font(.headline)
+                    Text("This app requires iOS 16.0 or later to use Screen Time features.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                }
+                .padding()
+            }
         }
     }
 }
 
-// Store to manage our blocking state
 class AppBlockerStore: ObservableObject {
     @Published var isAuthorized = false
     
     let center = AuthorizationCenter.shared
     
     init() {
-        // Check authorization status
+        // Check initial authorization status
         Task {
-            do {
-                try await center.requestAuthorization(for: .individual)
-                await MainActor.run {
-                    self.isAuthorized = true
-                }
-            } catch {
-                print("Failed to authorize: \(error)")
-            }
+            await checkInitialStatus()
+        }
+    }
+    
+    @MainActor
+    func checkInitialStatus() async {
+        let status = center.authorizationStatus
+        print("📱 Initial auth status: \(status)")
+        
+        if status == .approved {
+            self.isAuthorized = true
         }
     }
 }
