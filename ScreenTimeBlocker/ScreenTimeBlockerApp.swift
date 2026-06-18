@@ -20,8 +20,13 @@ struct ScreenTimeBlockerApp: App {
         // Handle: focusblocker://puzzle
         if url.scheme == "focusblocker" {
             if url.host == "puzzle" {
-                appState.showPuzzle = true
-                appState.recordAttempt()
+                // Only show puzzle if enough time has passed
+                if appState.shouldShowPuzzle() {
+                    appState.showPuzzle = true
+                    appState.recordAttempt()
+                } else {
+                    print("⏭️ Skipping puzzle - cooldown active")
+                }
             }
         }
     }
@@ -31,13 +36,39 @@ class AppState: ObservableObject {
     @Published var showPuzzle = false
     @Published var attemptsToday = 0
     @Published var puzzlesSolvedToday = 0
+    @Published var cooldownSeconds: TimeInterval {
+        didSet {
+            UserDefaults.standard.set(cooldownSeconds, forKey: "cooldownSeconds")
+        }
+    }
+    
+    var lastPuzzleTime: Date? {
+        UserDefaults.standard.object(forKey: "lastPuzzleTime") as? Date
+    }
     
     init() {
+        // Load cooldown setting (default 30 seconds)
+        self.cooldownSeconds = UserDefaults.standard.double(forKey: "cooldownSeconds")
+        if cooldownSeconds == 0 {
+            cooldownSeconds = 30
+        }
+        
         loadStats()
+    }
+    
+    func shouldShowPuzzle() -> Bool {
+        guard let lastTime = lastPuzzleTime else {
+            // First time, always show
+            return true
+        }
+        
+        let timeSinceLastPuzzle = Date().timeIntervalSince(lastTime)
+        return timeSinceLastPuzzle >= cooldownSeconds
     }
     
     func recordAttempt() {
         attemptsToday += 1
+        UserDefaults.standard.set(Date(), forKey: "lastPuzzleTime")
         saveStats()
     }
     
