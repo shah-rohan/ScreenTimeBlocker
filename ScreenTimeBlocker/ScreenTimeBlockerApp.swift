@@ -4,50 +4,47 @@ import FamilyControls
 @main
 struct ScreenTimeBlockerApp: App {
     @StateObject private var store = AppBlockerStore()
+    @StateObject private var puzzleManager = PuzzleManager()
     
     var body: some Scene {
         WindowGroup {
-            if #available(iOS 16.0, *) {
-                ContentView()
-                    .environmentObject(store)
-            } else {
-                VStack {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 60))
-                        .foregroundColor(.orange)
-                    Text("iOS 16.0 or later required")
-                        .font(.headline)
-                    Text("This app requires iOS 16.0 or later to use Screen Time features.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding()
+            ContentView()
+                .environmentObject(store)
+                .environmentObject(puzzleManager)
+                .onOpenURL { url in
+                    handleURL(url)
                 }
-                .padding()
+        }
+    }
+    
+    func handleURL(_ url: URL) {
+        print("📱 Opened with URL: \(url)")
+        
+        // focusblocker://puzzle
+        if url.scheme == "focusblocker" {
+            if url.host == "puzzle" {
+                puzzleManager.showPuzzle = true
+                puzzleManager.recordAttempt()
             }
         }
     }
 }
 
-class AppBlockerStore: ObservableObject {
-    @Published var isAuthorized = false
+class PuzzleManager: ObservableObject {
+    @Published var showPuzzle = false
+    @Published var attemptsToday = 0
+    @Published var lastAttemptTime: Date?
     
-    let center = AuthorizationCenter.shared
-    
-    init() {
-        // Check initial authorization status
-        Task {
-            await checkInitialStatus()
-        }
+    func recordAttempt() {
+        attemptsToday += 1
+        lastAttemptTime = Date()
+        
+        // Save to UserDefaults
+        UserDefaults.standard.set(attemptsToday, forKey: "attemptsToday")
+        UserDefaults.standard.set(lastAttemptTime, forKey: "lastAttemptTime")
     }
     
-    @MainActor
-    func checkInitialStatus() async {
-        let status = center.authorizationStatus
-        print("📱 Initial auth status: \(status)")
-        
-        if status == .approved {
-            self.isAuthorized = true
-        }
+    func completePuzzle() {
+        showPuzzle = false
     }
 }

@@ -18,7 +18,17 @@ targets:
         INFOPLIST_FILE: ScreenTimeBlocker/Info.plist
         CODE_SIGN_ENTITLEMENTS: ScreenTimeBlocker.entitlements
         DEVELOPMENT_TEAM: ""
-        CODE_SIGN_IDENTITY: "iPhone Developer"
-        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGNING_ALLOWED: NO
+        INFOPLIST_KEY_CFBundleURLTypes: |
+          <array>
+            <dict>
+              <key>CFBundleURLSchemes</key>
+              <array>
+                <string>focusblocker</string>
+              </array>
+            </dict>
+          </array>
     entitlements:
       path: ScreenTimeBlocker.entitlements
