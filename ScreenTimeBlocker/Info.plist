@@ -33,5 +33,16 @@
     <array>
         <string>UIInterfaceOrientationPortrait</string>
     </array>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>focusblocker</string>
+            </array>
+            <key>CFBundleURLName</key>
+            <string>com.yourname.ScreenTimeBlocker</string>
+        </dict>
+    </array>
 </dict>
 </plist>
