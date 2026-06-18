@@ -49,7 +49,6 @@ struct AuthorizationView: View {
             .disabled(isRequesting)
             .padding(.horizontal)
             
-            // Add a test button to check authorization status
             Button(action: checkAuthStatus) {
                 Text("Check Authorization Status")
                     .font(.caption)
@@ -65,18 +64,12 @@ struct AuthorizationView: View {
         
         Task {
             do {
-                print("🔐 Requesting Family Controls authorization...")
-                try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-                print("✅ Authorization granted!")
-                
+                try await store.service.requestAuthorization()
                 await MainActor.run {
                     store.isAuthorized = true
                     isRequesting = false
                 }
             } catch {
-                print("❌ Authorization failed: \(error)")
-                print("Error details: \(error.localizedDescription)")
-                
                 await MainActor.run {
                     errorMessage = error.localizedDescription
                     isRequesting = false
@@ -86,19 +79,11 @@ struct AuthorizationView: View {
     }
     
     func checkAuthStatus() {
-        let status = AuthorizationCenter.shared.authorizationStatus
-        print("📊 Current authorization status: \(status)")
+        let status = store.service.getAuthorizationStatus()
+        errorMessage = "Status: \(status)"
         
-        switch status {
-        case .notDetermined:
-            errorMessage = "Status: Not yet requested"
-        case .denied:
-            errorMessage = "Status: Denied - Try again"
-        case .approved:
-            errorMessage = "Status: Approved! ✓"
+        if status.contains("Approved") {
             store.isAuthorized = true
-        @unknown default:
-            errorMessage = "Status: Unknown"
         }
     }
 }

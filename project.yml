@@ -11,7 +11,9 @@ targets:
     platform: iOS
     deploymentTarget: "16.0"
     sources:
-      - ScreenTimeBlocker
+      - path: ScreenTimeBlocker
+        excludes:
+          - "*.md"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourname.ScreenTimeBlocker
@@ -21,14 +23,6 @@ targets:
         CODE_SIGN_IDENTITY: ""
         CODE_SIGNING_REQUIRED: NO
         CODE_SIGNING_ALLOWED: NO
-        INFOPLIST_KEY_CFBundleURLTypes: |
-          <array>
-            <dict>
-              <key>CFBundleURLSchemes</key>
-              <array>
-                <string>focusblocker</string>
-              </array>
-            </dict>
-          </array>
+        SWIFT_VERSION: "5.9"
     entitlements:
       path: ScreenTimeBlocker.entitlements

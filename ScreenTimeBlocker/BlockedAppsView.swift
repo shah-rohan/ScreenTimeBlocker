@@ -1,14 +1,11 @@
 import SwiftUI
 import FamilyControls
-import ManagedSettings
-import DeviceActivity
 
 struct BlockedAppsView: View {
+    @EnvironmentObject var store: AppBlockerStore
     @State private var isPickerPresented = false
     @State private var selection = FamilyActivitySelection()
     @State private var isBlocking = false
-    
-    let store = ManagedSettingsStore()
     
     var body: some View {
         VStack(spacing: 20) {
@@ -16,29 +13,39 @@ struct BlockedAppsView: View {
                 .padding()
                 .onChange(of: isBlocking) { newValue in
                     if newValue {
-                        applyShield()
+                        store.service.blockApps(selection)
                     } else {
-                        removeShield()
+                        store.service.unblockApps()
                     }
                 }
             
             Button(action: {
-                isPickerPresented = true
+                if store.usingMockService {
+                    selection = FamilyActivitySelection()
+                    print("🔧 [MOCK] App picker would appear here")
+                } else {
+                    isPickerPresented = true
+                }
             }) {
-                Label("Select Apps to Block", systemImage: "app.badge.fill")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                Label(
+                    store.usingMockService ? "Select Apps (Simulated)" : "Select Apps to Block",
+                    systemImage: "app.badge.fill"
+                )
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
             }
             .padding(.horizontal)
             
-            if !selection.applicationTokens.isEmpty {
+            if !selection.applicationTokens.isEmpty || store.usingMockService {
                 VStack(alignment: .leading) {
                     Text("Apps Selected: \(selection.applicationTokens.count)")
                         .font(.headline)
-                    Text("Toggle the switch above to block/unblock")
+                    Text(store.usingMockService ? 
+                         "In real app, selected apps would be blocked" :
+                         "Toggle the switch above to block/unblock")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -47,16 +54,9 @@ struct BlockedAppsView: View {
             
             Spacer()
         }
-        .familyActivityPicker(isPresented: $isPickerPresented, selection: $selection)
-    }
-    
-    func applyShield() {
-        store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens
-        store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : .specific(selection.categoryTokens)
-    }
-    
-    func removeShield() {
-        store.shield.applications = nil
-        store.shield.applicationCategories = nil
+        .familyActivityPicker(
+            isPresented: $isPickerPresented,
+            selection: $selection
+        )
     }
 }

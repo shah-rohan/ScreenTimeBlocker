@@ -2,32 +2,16 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var store: AppBlockerStore
-    @EnvironmentObject var puzzleManager: PuzzleManager
     @State private var selectedTab = 0
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            // Main view
-            NavigationView {
-                VStack {
-                    if store.usingMockService {
-                        MockWarningBanner()
-                    }
-                    
-                    if store.isAuthorized {
-                        BlockedAppsView()
-                    } else {
-                        AuthorizationView()
-                    }
+            mainView
+                .tabItem {
+                    Label("Blocker", systemImage: "shield.fill")
                 }
-                .navigationTitle("Focus Blocker")
-            }
-            .tabItem {
-                Label("Blocker", systemImage: "shield.fill")
-            }
-            .tag(0)
+                .tag(0)
             
-            // Setup guide
             NavigationView {
                 ShortcutsGuideView()
             }
@@ -35,20 +19,44 @@ struct ContentView: View {
                 Label("Setup", systemImage: "gearshape.fill")
             }
             .tag(1)
+        }
+    }
+    
+    var mainView: some View {
+        NavigationView {
+            VStack {
+                if store.usingMockService {
+                    MockWarningBanner()
+                }
+                
+                if store.isAuthorized {
+                    BlockedAppsView()
+                } else {
+                    AuthorizationView()
+                }
+            }
+            .navigationTitle("Focus Blocker")
+        }
+    }
+}
+
+struct MockWarningBanner: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.orange)
+                Text("Development Mode")
+                    .fontWeight(.semibold)
+            }
             
-            // Stats
-            NavigationView {
-                StatsView()
-            }
-            .tabItem {
-                Label("Stats", systemImage: "chart.bar.fill")
-            }
-            .tag(2)
+            Text("App blocking is simulated. Install via App Store for real functionality.")
+                .font(.caption)
+                .multilineTextAlignment(.center)
         }
-        .fullScreenCover(isPresented: $puzzleManager.showPuzzle) {
-            PuzzleView()
-                .environmentObject(puzzleManager)
-                .interactiveDismissDisabled() // Prevent swiping away
-        }
+        .padding()
+        .background(Color.orange.opacity(0.1))
+        .cornerRadius(8)
+        .padding()
     }
 }

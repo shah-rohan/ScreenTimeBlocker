@@ -1,50 +1,39 @@
 import SwiftUI
-import FamilyControls
 
 @main
 struct ScreenTimeBlockerApp: App {
     @StateObject private var store = AppBlockerStore()
-    @StateObject private var puzzleManager = PuzzleManager()
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(store)
-                .environmentObject(puzzleManager)
-                .onOpenURL { url in
-                    handleURL(url)
-                }
-        }
-    }
-    
-    func handleURL(_ url: URL) {
-        print("📱 Opened with URL: \(url)")
-        
-        // focusblocker://puzzle
-        if url.scheme == "focusblocker" {
-            if url.host == "puzzle" {
-                puzzleManager.showPuzzle = true
-                puzzleManager.recordAttempt()
-            }
         }
     }
 }
 
-class PuzzleManager: ObservableObject {
-    @Published var showPuzzle = false
-    @Published var attemptsToday = 0
-    @Published var lastAttemptTime: Date?
+class AppBlockerStore: ObservableObject {
+    @Published var isAuthorized = false
+    @Published var usingMockService = false
     
-    func recordAttempt() {
-        attemptsToday += 1
-        lastAttemptTime = Date()
+    let service: BlockingService
+    
+    init() {
+        self.service = BlockingServiceFactory.create()
+        self.usingMockService = !service.isRealImplementation
         
-        // Save to UserDefaults
-        UserDefaults.standard.set(attemptsToday, forKey: "attemptsToday")
-        UserDefaults.standard.set(lastAttemptTime, forKey: "lastAttemptTime")
+        Task {
+            await checkInitialStatus()
+        }
     }
     
-    func completePuzzle() {
-        showPuzzle = false
+    @MainActor
+    func checkInitialStatus() async {
+        let status = service.getAuthorizationStatus()
+        print("📱 Initial auth status: \(status)")
+        
+        if status.contains("Approved") {
+            self.isAuthorized = true
+        }
     }
 }
